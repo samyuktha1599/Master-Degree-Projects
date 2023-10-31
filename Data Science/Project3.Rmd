@@ -1,0 +1,457 @@
+---
+title: "Assignment 3"
+output: html_notebook
+author: "Samyuktha Venkataswamy Reddy"
+---
+
+### Create R notebook and install packages
+
+I have created a new R notebook with the title as Assignment 3 and installed packages: tidyverse, ggplot2, dplyr.
+
+```{r}
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("dplyr")
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+```
+
+## Part 1 - Household Energy Consumption
+
+### 1. Exploratory Data Analysis (EDA), cleaning, and preprocessing
+
+To load data set I have used the command: data \<- read.csv('.csv')
+
+This command reads the csv file and loads it into the variable energy.
+
+```{r}
+#loading the data set
+energy <- read.csv('D:/Downloads/household_energy_usage_regression.csv')
+```
+
+```{r}
+head(energy,20)
+```
+
+The household_energy_usage_regression dataset has the following variable:
+
+There are 10055 rows and 6 columns.
+
+Datetime is a character variable.
+
+double variables: kwh, temperatureF, temperatureC, humidity, dewpointC.
+
+```{r}
+#Summary statistics
+summary(energy)
+```
+
+Summary function shows the overall details about the dataset including the summary statistics.
+
+Patterns or issues observed:
+
+datetime: This column contains date and time information.
+
+kwh: This represents the energy consumption in kilowatt-hours. From the summary statistics we can observe that the data is right-skewed since the mean is slightly higher than median.
+
+temperatureF: This column represents the temperature in Fahrenheit and the range of temperatures is 38.93 to 95.94.
+
+temperatureC: This is similar to temperatureF variable but represents the temperature in degree Celsius.
+
+humidity: This represents percent relative humidity. The summary statistics show the variation in the humidity levels. Humidity ranges from a minimum of 22% to a maximum of 100%.
+
+dewpointC: The dew point temperature is represented in Celsius.
+
+We can observe that column temperatureF, temperatureC, humidity and dewpoint each has 86 NA values. These needs to be handled before building the model.
+
+#### a. Missing Values
+
+```{r}
+#Handling Missing values in the dataset
+missing_values <- sum(is.na(energy))
+cat("Missing Values:", missing_values, "\n")
+
+for (i in 1:ncol(energy)){
+  na_count<-sum(is.na(energy[,i]))
+ # print(names(demo)[i])
+  cat(names(energy)[i], "-", na_count,"\n")
+}
+
+```
+
+```{r}
+#Replacing these missing values
+energy$temperatureF = ifelse(is.na(energy$temperatureF),
+                      median(energy$temperatureF,
+                             na.rm = TRUE),
+                      energy$temperatureF)
+energy$temperatureC = ifelse(is.na(energy$temperatureC),
+                      median(energy$temperatureC,
+                             na.rm = TRUE),
+                      energy$temperatureC)
+energy$humidity = ifelse(is.na(energy$humidity),
+                      median(energy$humidity,
+                             na.rm = TRUE),
+                      energy$humidity)
+energy$dewpointC = ifelse(is.na(energy$dewpointC),
+                      median(energy$dewpointC,
+                             na.rm = TRUE),
+                      energy$dewpointC)
+```
+
+Here I have replaced all the missing values with the median values of the respective columns.
+
+```{r}
+#Re-Check for missing values 
+missing_values <- sum(is.na(energy))
+cat("Missing Values:", missing_values, "\n")
+```
+
+#### b. Duplicates
+
+As a next measure for cleaning data, I am checking the if there are any duplicate entries by using the datetime variable.
+
+When executed, it can be observed that there are no duplicate entries.
+
+```{r}
+#Checking for duplicate records using first_name and last_name combination
+
+duplicate_rows <- duplicated(energy, subset=c("datetime"))
+
+# Display duplicate rows
+print(sum(duplicate_rows,na.rm=TRUE)) 
+```
+
+#### c. Outliers
+
+Transforming Outliers: Here I have used boxplot to check if the numeric columns contains any outliers.
+
+```{r}
+#Box plot before removing outliers
+boxplot(energy$temperatureF)
+boxplot(energy$kwh)
+boxplot(energy$temperatureC)
+boxplot(energy$dewpointC)
+```
+
+From the above boxplots, we can observe that there are few data points that fall outside the whisker. These are considered to be outliers as these differ from the majority of the data points and affect the accuracy of the statistical analysis.
+
+To transform these data points, I have replaced it with the median value.
+
+```{r}
+#Remove outliers in temperatureF column
+Q1 <- quantile(energy$temperatureF, 0.25)
+Q3 <- quantile(energy$temperatureF, 0.75)
+IQR_value <- Q3-Q1
+lower_bound <- Q1 - 1.5 * IQR_value
+upper_bound <- Q3 + 1.5 * IQR_value
+
+#Replace outliers with more reasonable values (e.g., median)
+energy$temperatureF[energy$temperatureF < lower_bound] <- median(energy$temperatureF)
+energy$temperatureF[energy$temperatureF > upper_bound] <- median(energy$temperatureF)
+
+#Box plot after removing outliers
+boxplot(energy$temperatureF)
+
+
+#Remove outliers in Kwh column
+Q1 <- quantile(energy$kwh, 0.25)
+Q3 <- quantile(energy$kwh, 0.75)
+IQR_value <- Q3-Q1
+lower_bound <- Q1 - 1.5 * IQR_value
+upper_bound <- Q3 + 1.5 * IQR_value
+
+#Replace outliers with more reasonable values (e.g., median)
+energy$kwh[energy$kwh < lower_bound] <- median(energy$kwh)
+energy$kwh[energy$kwh > upper_bound] <- median(energy$kwh)
+
+#Box plot after removing outliers
+boxplot(energy$kwh)
+
+#Remove outliers in dewpointC column
+Q1 <- quantile(energy$dewpointC, 0.25)
+Q3 <- quantile(energy$dewpointC, 0.75)
+IQR_value <- Q3-Q1
+lower_bound <- Q1 - 1.5 * IQR_value
+upper_bound <- Q3 + 1.5 * IQR_value
+
+#Replace outliers with more reasonable values (e.g., median)
+energy$dewpointC[energy$dewpointC < lower_bound] <- median(energy$dewpointC)
+energy$dewpointC[energy$dewpointC > upper_bound] <- median(energy$dewpointC)
+
+#Box plot after removing outliers
+boxplot(energy$dewpointC)
+```
+
+Here I have removed temperatureF and selected temperatureC as all other variables are related to celsius.
+
+```{r}
+# Feature selection
+selected_features <- c("temperatureC", "humidity", "dewpointC")
+energy <- energy %>%
+  select(datetime, kwh, all_of(selected_features))
+
+selected_features
+```
+
+```{r}
+head(energy)
+```
+
+### 2. Modelling
+
+Setting train_proportion to 0.8 indicates an 80-20 train-test split, where 80% of the data will be allocated to the training set and the remaining 20% to the testing set.
+
+```{r}
+# Setting a seed for reproducibility
+set.seed(246)
+
+#Setting the proportion of data for the training set to 80%
+train_proportion <- 0.8
+
+# Calculating the number of samples for training set
+number_train_samples <- round(nrow(energy) * train_proportion)
+
+# Created a vector of random indices for the training set
+train_indices <- sample(1:nrow(energy), number_train_samples)
+```
+
+Here I am splitting the data to train data and test data.
+
+```{r}
+#Training data
+train_data <- energy[train_indices, ]
+
+
+#Testing data
+test_data <- energy[-train_indices, ]
+```
+
+Below I am creating a model named 'energy_model' to predict energy consumption (kWh) based on three predictor variables: temperature in Celsius, humidity, and dew point temperature in Celsius. The model is built using the training dataset "train_data." This regression model aims to establish a linear relationship between the selected features and energy consumption, enabling us to make predictions and gain insights into how these factors influence energy usage.
+
+```{r}
+# Creating the model
+energy_model <- lm(kwh ~ temperatureC + humidity + dewpointC, data = train_data)
+```
+
+```{r}
+summary(energy_model)
+```
+
+From the above model summary, we can interpret that:
+
+For every one-degree Celsius increase in temperature, energy consumption increases by approximately 0.098 kWh. In contrast, higher humidity levels are associated with reduced energy consumption, with a 1% increase in humidity leading to a decrease of roughly 1.44 kWh. Additionally, for each one-degree Celsius rise in dew point temperature, energy consumption increases by about 0.06 kWh.
+
+The model's goodness of fit is supported by the high multiple R-squared value of 0.46, suggesting that these three factors explain 46% of the variability in energy consumption. These insights shows the importance of monitoring and controlling environmental conditions to optimize energy efficiency.
+
+```{r}
+# Check levels of the datetime variable
+levels(train_data$datetime)
+levels(test_data$datetime)
+```
+
+### 3. Model Performance Evaluation
+
+Here we are getting predictions on the previously built energy_model on the test data. This is a crucial step in model evaluation, as it allows us to compare the model's predictions to the actual energy consumption values in the 'testing data and check the model's accuracy and performance.
+
+```{r}
+# Evaluating model performance
+predictions <- predict(energy_model, newdata = test_data)
+```
+
+```{r}
+#Calculating Mean-Squared Error
+mse <- mean((predictions - test_data$kwh)^2)
+print(paste("Mean Squared Error:", mse))
+```
+
+```{r}
+#Mean absolute error
+mae<-mean(abs(predictions - test_data$kwh))
+print(paste("Mean absolute Error: ", mae))
+```
+
+```{r}
+# Calculate R-squared
+r_squared <- summary(energy_model)$r.squared
+print(paste("R squared Error:", r_squared))
+```
+
+The model has a mean squared error of approximately 0.596, absolute mean error of 0.59 which is relatively low and suggests that the model's predictions are close to the actual values.
+
+The R squared error is approximately 0.45 which indicates that the linear regression model explains about 45% of the variability in energy consumption.
+
+```{r}
+# Interpret the coefficients
+coefficients <- coef(energy_model)
+cat("Coefficients:\n")
+print(coefficients)
+```
+
+By interpreting the coefficients we can conclude that, temperature, humidity and dew point plays a crucial role in influencing the energy consumption. When all these parameters are at there minimum values, the estimated energy consumption is 0.18kwh.
+
+Energy consumption has positive coefficient for temperature and dew point but a negative coefficient for humidity.
+
+For 1 degree raise in temperature the energy consumption increases by 0.098kwh.
+
+For 1 degree raise in dew point the energy consumption increases by 0.06kwh.
+
+For 1% increase in humidity the energy consumption decreases by 1.4kwh.
+
+### 4. Visualizations
+
+```{r}
+# Visualize the results
+plot(test_data$kwh, predictions, main = "Actual vs. Predicted", xlab = "Actual kwh", ylab = "Predicted kwh")
+abline(0, 1, col = "red")
+```
+
+Most of the data points are present above the red line and scattered around, which indicates that the model is less accurate and has over estimated the kwh consumption. This accuracy can also be determined by looking into mean squared error of the model.
+
+```{r}
+ggplot(energy, aes(x=temperatureC, y=kwh)) +
+  geom_point(color='red') +
+  geom_smooth(method="lm", se=FALSE, color="blue") +
+  labs(title="Linear Regression of Household Energy Consumption",
+       x="Temperature in Celsius",
+       y="Energy Consumption in kwh")
+```
+
+The scatter plot shows that temperature and energy consumption are directly proportional and the points are scattered around zero. This shows that temperature has a good influence on the energy consumption.
+
+```{r}
+#To predict the accuracy of the model
+predict(energy_model, tibble(temperatureC = c(23.9333333333333), humidity = c(0.81), dewpointC = c(4.09533333333332)))
+```
+
+Challenges faced: Presence of Null or missing values and outliers in the data. Finding a perfect model fit is also a challenge in every model.
+
+## Part 2 - Credit Card Fraud
+
+### 1. Exploratory Data Analysis (EDA), cleaning, and preprocessing
+
+I have loaded the dataset to creditcard variable.
+
+```{r}
+#loading the data set
+creditcard <- read.csv('D:/Downloads/creditcard.csv')
+```
+
+```{r}
+head(creditcard,20)
+```
+
+The credit card data set has the following variables:
+
+There are 284807 total number of rows. The numeric columns are time, amount and V1,V2,..V28 predictors or independent variables. Class is a dependent variable consisting of binary values where 1 indicates fraud and 0 indicates non-fraud.
+
+```{r}
+summary(creditcard)
+```
+
+The summary shows all the statistics of the dataset.
+
+```{r}
+#Handling Missing values in the dataset
+missing_vals <- sum(is.na(creditcard))
+cat("Missing Values:", missing_values, "\n")
+
+for (i in 1:ncol(creditcard))
+  na_count<-sum(is.na(creditcard[,i]))
+  cat(names(creditcard)[i], "-", na_count,"\n")
+```
+
+From the above query we can observe that there are no missing values in the dataset. Hence, the dataset is all good to proceed with modelling.
+
+### 2. Modelling
+
+Setting card_train_proportion to 0.85 indicates an 85-15 train-test split, where 85% of the data will be allocated to the training set and the remaining 15% to the testing set.
+
+```{r}
+# Split the dataset into training and testing sets
+set.seed(246)
+
+#Setting the proportion of data for the training set to 80%
+card_train_proportion <- 0.85
+
+# Calculating the number of samples for training set
+card_number_train_samples <- round(nrow(creditcard) * card_train_proportion)
+
+# Created a vector of random indices for the training set
+train_indices_card <- sample(1:nrow(creditcard), size=card_number_train_samples)
+```
+
+Here I am splitting the data to train data and test data.
+
+```{r}
+#Training data
+card_train_data <- creditcard[train_indices_card, ]
+#Testingg data
+card_test_data <- creditcard[-train_indices_card, ]
+```
+
+I am creating a logistic regression model with the goal of predicting the binary outcome variable "Class" based on the other predictor variables. The "family = binomial" argument specifies that this model is intended for binary classification tasks.
+
+```{r}
+# Creating the logistic regression model
+card_model <- glm(Class ~ ., data = card_train_data, family = binomial)
+```
+
+```{r}
+summary(card_model)
+```
+
+Interpretations:
+
+The model has a large negative intercept values, indicating that a low probability of fraud when all the predictors are zero.
+
+Some predictors (V4, V8, V13, V14, V20, V21, V22, V27) have their coefficients marked as \*\*\* which indicates that they are highly significant in predicting fraud detection. Whereas the other variables that are not marked as \*\*\* and have a higher p-values are less significant in predicting fraud.
+
+Amount has a huge impact on predicting fraud as its p-values is very less
+
+This model has residual deviance of 1838 which is very much less than the null deviance (6140.8). This indicates that the model has a very good fit.
+
+### 3. Model Performance Evaluation
+
+```{r}
+# Evaluating model performance
+card_predictions <- predict(card_model, newdata = card_test_data)
+```
+
+```{r}
+
+# Create a confusion matrix
+confusion_matrix <- table(Actual = card_test_data$Class, Predicted = ifelse(card_predictions > 0.5, 1, 0))
+print(confusion_matrix)
+```
+
+From the above confusion matrix we can observe that the model is well fit.
+
+These results are indicating that roughly 99.97% (42635 out 42646) of the non-default class observations are predicted correctly, whereas only about 62.6% (47 out of 75) of the default class observations\
+are predicted correctly.
+
+```{r}
+# Checking accuracy of the model
+accuracy <- (confusion_matrix[1, 1] + confusion_matrix[2, 2]) / sum(confusion_matrix)
+cat("Accuracy:", accuracy, "\n")
+```
+
+The model has a very good accuracy of 99.9%. This indicates that the model is good compared to previously built energy_model.
+
+### 4. Visualizations
+
+```{r}
+ggplot(card_test_data, aes(x=card_predictions, y=card_test_data$Class)) +
+  geom_point(color='red') +
+  geom_smooth(method="glm", method.args = c(family = "binomial"), color="blue") +
+  labs(title="Logistic regression classification of credit card fraud",
+       x="predictors",
+       y="Class") 
+```
+
+The graph shows a perfect Sigmoid curve and it effectively separates the two classes suggesting that the model's predictions are accurate.
+
+Overall the logistic regression classification of credit card fraud detection model is very much accuracy in finding the fraud detection with an accuracy rate of 99.9%.
