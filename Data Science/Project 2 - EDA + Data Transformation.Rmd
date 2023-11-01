@@ -1,0 +1,318 @@
+---
+title: "Assignment 2"
+output: html_notebook
+Author: "Samyuktha Venkataswamy Reddy"
+---
+
+### Create R notebook and install packages
+
+I have created a new R notebook with the title as Assignment 1.
+
+In the below chunk I have installed the packages tidyverse and ggplot2 using the command install.packages
+
+```{r}
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("dplyr")
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+```
+
+### 1) Reviewing the dataset
+
+To load data set I have used the command: data \<- read.csv('demographic.csv')
+
+This command reads the csv file and loads it into the variable demo.
+
+```{r}
+#loading the data set
+demo <- read.csv('C:/Users/ADMIN/Documents/test/demographic.csv')
+```
+
+```{r}
+head(demo,20)
+```
+
+The demographic dataset has the following variable:
+
+There are 10565 rows and 12 columns.
+
+Character type: first_name, last_name, gender, education, marital_status, occupation_group, address, city, state.
+
+double type: age, credit_score, home_build_year.
+
+```{r}
+str(demo)
+```
+
+Str() gives the structure of dataset along with values.
+
+```{r}
+#Summary statistics
+summary(demo)
+```
+
+Summary function shows the overall details about the dataset including the summary statistics.
+
+Patterns or issues observed:
+
+Age - The maximum age is mentioned as 134. This data might be incorrect. The median is 54 and mean is 53.3 which indicates that the distribution might be right-skewed.
+
+Home_build_year - It shows a range from 1970 to 2023 and most of the houses were built during 1996.
+
+Credit_score - It ranges from 300 to 850 with an average of 575.1
+
+### 2. Data Cleaning and Transformation
+
+There are many missing values(NA) in the gender and marital_status column. Hence, these need to be transformed to form a good data set.
+
+```{r}
+#Handling Missing values in the dataset
+for (i in 1:ncol(demo)){
+  na_count<-sum(is.na(demo[,i]))
+ # print(names(demo)[i])
+  cat(names(demo)[i], "-", na_count,"\n")
+}
+
+```
+
+I have replaced the NA rows in marital_status column with 'Married'. This was an assumption. The mean age is 53.3 so I assume most of the people in this age group would be married. Hence, I have replaced these missing values as married.
+
+For gender column I did not make any assumption and replaced these missing values with the mode value. The mode value for gender was male, hence, all these values were replaced with male.
+
+```{r}
+
+#Replace NA with other character
+
+replacement_character <- "Married"
+
+# Replace NA values in the 'Marital_status' column with the replacement character
+demo$marital_status <- ifelse(is.na(demo$marital_status), replacement_character, demo$marital_status)
+
+#Replacing NA values with mode value of 'gender' column
+demo$gender = ifelse(is.na(demo$gender),
+                      median(demo$gender,
+                             na.rm = TRUE),
+                      demo$gender)
+
+# Print the updated data frame
+for (i in 1:ncol(demo)){
+  na_count<-sum(is.na(demo[,i]))
+ # print(names(demo)[i])
+  cat(names(demo)[i], "-", na_count,"\n")
+}
+
+print(demo)
+```
+
+As a next measure for cleaning data, I am checking the if there are any duplicate entries by using the first_name and last_name combination.
+
+When executed, it can be observed that there are no duplicate entries.
+
+```{r}
+#Checking for duplicate records using first_name and last_name combination
+
+duplicate_rows <- duplicated(demo, subset=c("first_name","last_name"))
+
+# Display duplicate rows
+print(sum(duplicate_rows,na.rm=TRUE)) 
+
+#there are no duplicates
+```
+
+Transforming Outliers: Here I have used boxplot to check if the numeric columns contains any outliers.
+
+From the below boxplot for age, we can observe that there are few data points that fall outside the whisker. These are considered to be outliers as these differ from the majority of the data points and affect the accuracy of the statistical analysis.
+
+To transfrom these data points, I have replaced it with the median value.
+
+After transforming the outliers the value of mean has been changed from 53.3 to 53.25 and the resultant is a much accurate data.
+
+```{r}
+#Box plot before removing outliers
+boxplot(demo$age)
+boxplot(demo$credit_score)
+boxplot(demo$home_build_year)
+
+#Remove outliers in age column
+Q1 <- quantile(demo$age, 0.25)
+Q3 <- quantile(demo$age, 0.75)
+IQR_value <- Q3-Q1
+lower_bound <- Q1 - 1.5 * IQR_value
+upper_bound <- Q3 + 1.5 * IQR_value
+
+#Replace outliers with more reasonable values (e.g., median)
+demo$age[demo$age < lower_bound] <- median(demo$age)
+demo$age[demo$age > upper_bound] <- median(demo$age)
+
+#Box plot after removing outliers
+boxplot(demo$age)
+summary(demo)
+```
+
+### 3. Summerization and Aggregate
+
+```{r}
+#summary for the entire data set
+summary_statistics <- demo %>%
+  summarise(mean_age = mean(age),
+            median_credit= median(credit_score),
+            min_house_built=min(home_build_year),
+            max_house_built=max(home_build_year))
+
+print(summary_statistics)
+
+#Using summary function
+summary(demo)
+
+```
+
+Observations:
+
+We can either use the general summerize function or summary() function to get the statistical summary for the entire dataset.
+
+The function summary shows the statistical summary for the entire dataset. Here were have 3 numerical columns, all the statistics including mean, median, minimum value, maximum value and first and third quartile values are displayed.
+
+```{r}
+# Summary statistics by gender
+gender_summary <- demo %>%
+  group_by(gender) %>%
+  summarise(mean_age = mean(age),
+            mean_credit= mean(credit_score),
+            gender_count=n())
+
+print(gender_summary)
+```
+
+Here I am grouping the data set by gender and calculating the average age, credit score and count for each gender. I choose this to check which gender has relatively older and has high credit scores.
+
+Observation from grouped summary statistics:
+
+The strength of males is more than females with the count of 7844 and 2721 respectively. The average age of females is 53 and that of males is 53.3. They both have approximately same mean age but the mean credit_score of females is higher than males. From this we can conclude that females use credit cards more frequently than male individuals.
+
+```{r}
+#checking the count for each state
+state_summary <- demo %>%
+  group_by(state) %>%
+  summarise(total_count=n())
+
+print(state_summary)
+
+#grouped summary statistics for occupation group
+occupation_summary <- demo %>% filter(state=='FL')%>%
+  group_by(occupation_group,state) %>%
+  summarise(mean_credit=mean(credit_score),
+            mean_home = mean(home_build_year),
+            total_count=n())
+
+#displaying the statistics output
+print(occupation_summary)
+
+#grouped summary statistics for education group
+education_summary <- demo %>% filter(state=='FL')%>%
+  group_by(education) %>%
+  summarise(mean_credit=mean(credit_score),
+            total_count=n())
+#displaying the statistics output
+print(education_summary)
+```
+
+I have filtered all the data for the state Florida since it has the highest strength of 10498 and dominates more.
+
+By grouping the data with occupation_group we can observe that, farmers have the highest credit score (598) but are living in oldest houses that were built during 1994. When compared to other occupants the count of farmers in Florida is very less. Individuals in office administration occupation group have less mean credit score but their homes are relatively newer.
+
+Florida has a very good number of Blue Collar workers (2400) and they have an average credit score of 576.9
+
+People with a graduate degree have high mean credit score (579.8) followed by less than HS degree (579.2) and HS diploma (575.4) individuals.
+
+### 4) Visualizations
+
+```{r}
+#histogram for age distribution
+ggplot(demo, aes(x = age)) +
+  geom_histogram(binwidth = 5, fill = "blue", color ="green") + labs(title = "Age Distribution", x = "Age", y = "Frequency") +
+  theme_minimal()
+```
+
+a\. This is a histogram plot for age distribution. This is an univariate analysis as it shows the analysis of a single variable. This plot was chosen because it provides a visual representation of age distribution in the dataset.
+
+b\. Interpretations: The Plot has age on the x-axis and count of individuals (frequency) on the y-axis. The colored bars represent the frequency or count of individuals.
+
+c\. Trends and pattern: The Plot is right skewed towards the older individuals. As the age increase the count of individuals also increases to a certain extent and then falls down. This indicates that the dataset has large number of people in the age group 40-65 years.
+
+d\. The main advantage of using histogram plot is that it gives a visual representation of the previous review and summerization. The statistical summary of mean age is correctly displayed in the plot.
+
+```{r}
+#bar plot for gender distribution
+ggplot(demo, aes(x = gender)) +
+  geom_bar(fill = "Blue") +labs(title = "Gender Distribution", x = "Gender", y = "Count") + theme_minimal()
+
+```
+
+a\. This is a bar plot for gender distribution. This is an univariate analysis as it shows the analysis of a single variable. This plot was chosen because it provides a visual representation and count of each gender in the dataset.
+
+b\. Interpretations: The Plot has gender on the x-axis and count of individuals on the y-axis. The colored bars represent the frequency.
+
+c\. Trends and patterns: The count of male individuals is much larger than the female individuals.
+
+d\. The main benefit of using bar plot is that it gives a visual representation of the previous review and summerization. The previous statistical summary of gender distribution is correctly displayed in the plot. It gives a good and quick understanding of how widely each category is distributed.
+
+```{r}
+#scatter plot for age vs credit score
+ggplot(demo, aes(x = age, y = credit_score, color=gender)) +
+  geom_point() +
+  labs(title = "Age vs Credit Score",
+       x = "Age",
+       y = "Credit Score") +
+  theme_minimal()
+
+```
+
+a\. The above graph is a scatter plot of age and credit score. This plot was chosen because it provides a visual relationship between age and credit score for each gender.
+
+b\. Interpretation: The plot has individual's age on the x-axis and credit score on the y-axis. The geom points are each individuals and they are colored based on their gender.
+
+c\. Patterns and trends: The credit score is directly proportional to the age. As the individual's age increase their credit score increases. The data distribution is evenly spread for both the genders.
+
+d\. The main advantage of using scatter plot is that it gives a visual representation of the previous review and summerization. The previous summary statistics just gave the mathematical insights, but visualization gives a graphical relationship of age, credit score and gender.
+
+```{r}
+#box plot for occupation by gender
+ggplot(demo, aes(x = occupation_group, y = credit_score, fill = gender)) +
+  geom_boxplot() +
+  labs(title = "Occupation and Gender vs Credit Score",
+       x = "Occupation",
+       y = "Credit Score") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+
+a\. This is a box plot for occupation and gender vs credit score distribution. This is an multivariate analysis as it involves two categorical variables and a numeric variable. I choose this plot because it shows how the credit score of different occupation levels differ by gender.
+
+b\. Interpretation: The plot has occupation on the x-axis and credit score on the y-axis. The whiskers represent the gender, females are marked as pink and males as blue.
+
+c\. Trends and pattern: We can observe that in case of occupation group - Blue Collar and Farmers, the credit scores among females individuals is higher than those of male individuals. Moreover, they are widely distributed. Whereas for technical occupation group, the credit score among male individuals is higher. The rest of the occupation groups have approximately same distribution.
+
+d\. The visualization enhances the previous review and summerization. Visual graphs and plots makes it easier to understand and interpret how credit scores are distributed over different occupation categories. Moreover, it shows how these results are influced by gender. Use of box plot also helps in identifying if there are any outliers in the dataset which might lead to inaccurate analysis.
+
+e\. The visuals definitely provide a bigger story when looked together. The first histogram plot provides the age distribution over the entire dataset and give a clear picture of how it is distributed and positively skewed or has a normal distribution.
+
+The second bar plot shows the gender distribution which is essential to understand the other gender related trends. This plot helps us in understanding how the small portion of female individuals have larger impact on the credit score distribution.
+
+The above statement can be clearly illustrated in the last box plot where the credit score distribution is calculated for each occupation and gender. While the number of male individuals exceeds females, females exhibit a credit score distribution that is more widely spread-out.
+
+### 5) Report and Results Discussion
+
+The dataset contains information about individuals from different states, their identity, personal details, location and employment details. The character variables are first_name, last_name, gender, education, marital_status, occupation_group, address, city and state where they reside in. The numrical variables are age, credit score of each individual and the year in which they have built their house.
+
+While performing cleaning I noticed that this dataset had few missing values in the gender and marital_status columns and these were transformed to increase data analysis accuracy. There were few outliers in the age column. These are generally the data points that fall outside the whisker and result in statistical inaccuracy. Hence, I have replaced these with the median value. There were no duplicates in the data when checked with first name and last name combination.
+
+Based on the summary statistics of the entire dataset, the age of individuals ranges from 19 years to 105 years with an average of 53.25 years. Most of the people are married, live in Florida and have their houses built during 1996. They have an average credit score of 575.1. However, female individuals have high credit score despite having less individual count.
+
+Based on the data visualizations and statistics we can conclude that, out of all the states Florida dominates with 10498 individuals. The dataset contains more male (7844) individuals when compared to female (2721) individuals but their average age is approximately same. Despite the less indivudials count, females exhibit a credit score distribution that is higher and more widely spread-out when compared to males. The levels of education is directly proportional to the credit scores, as individuals with graduate degree have the highest average credit score of 579.8. Incase of occupation, farmers have high average credit score of 598, followed by blue collar employees. Hence, we can assume that most of the farmers in Florida are graduate degree holders.
+
+These overall insights and patterns can be used for future analysis or decision making in various sectors such as finance to filter their money lending and risk assessment based on individual's occupation and credit score and real-estate to filter their customers based on the occupation, location and housing.

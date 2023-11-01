@@ -1,0 +1,255 @@
+---
+title: "Assignment 1"
+output: html_notebook
+author: "Samyuktha Venkataswamy Reddy"
+---
+
+## 1) Create R notebook and install packages
+
+I have created a new R notebook with the title as Assignment 1.
+
+In the below chunk I have installed the packages tidyverse and skimr using the command install.packages
+
+```{r}
+#installing tidyverse package 
+install.packages("tidyverse")
+
+
+```
+
+```{r}
+#installing skimr package
+install.packages("skimr")
+```
+
+## 2) Data Loading and Exploration
+
+a)  we are loading the installed packages using library() command.
+
+To load data set I have used the command: data \<- read.csv('palmerpenguins.csv')
+
+This command reads the csv file and loads it into the variable data. Here I have placed the data file under the same directory as the rmd file.
+
+```{r}
+#loading the package tidyverse
+library(tidyverse)
+
+#loading the palmer penguins data set
+data <- read.csv('palmerpenguins.csv')
+```
+
+b)  Head() command displays the first few rows of the loaded data set. This gives a brief idea of the data set structure.
+
+Here I am displaying the first 10 rows of the data set.
+
+```{r}
+# display the data set
+head(data,10)
+
+```
+
+c)  The penguin dataset have the following variables:
+
+species: A character variable which describes the penguin species.
+
+island: A character variable which tells the place where the particular penguin species are located.
+
+bill_length_mm: A double variable which indicates the penguin's bill length in millimeter.
+
+bill_depth_mm: A double variable which indicates the penguin's bill depth in millimeter.
+
+flipper_length_mm: A double variable which indicates the penguin's flipper length in millimeter.
+
+body_mass_g: A double variable which shows the body mass in grams.
+
+sex: A character variable which shows the gender. (female/male/NA for missing variables)
+
+year: An integer variable.
+
+## 3) Data Summerization
+
+First I have loaded the values of the bill_depth_mm column into a variable bill_depth_values. Then I have filtered out the NA values and stored the new data into bill_depth_nona_values variable. Later used the built in functions to find the respective mean, median, standard deviation, minimum and maximum.
+
+I have performed the similar steps for all numeric variables.
+
+```{r}
+#Calculate mean, median, standard deviation, minimum and maximum
+
+#statistic for bill_depth_mm
+bill_depth_values <- data['bill_depth_mm']
+bill_depth_nona_values <- bill_depth_values[!is.na(bill_depth_values)]
+print("bill_depth_values")
+mean(bill_depth_nona_values)
+median(bill_depth_nona_values)
+sd(bill_depth_nona_values)
+max(bill_depth_nona_values)
+min(bill_depth_nona_values)
+
+#statistics for bill_length_mm
+bill_length_values <- data['bill_length_mm']
+bill_length_nona_values <- bill_length_values[!is.na(bill_length_values)]
+print("bill_length_values")
+mean(bill_length_nona_values)
+median(bill_length_nona_values)
+sd(bill_length_nona_values)
+max(bill_length_nona_values)
+min(bill_length_nona_values)
+
+#statistics for flipper_length_mm
+flipper_length_values <- data['flipper_length_mm']
+flipper_length_nona_values <- flipper_length_values[!is.na(flipper_length_values)]
+print("flipper_length_values")
+mean(flipper_length_nona_values)
+median(flipper_length_nona_values)
+sd(flipper_length_nona_values)
+max(flipper_length_nona_values)
+min(flipper_length_nona_values)
+
+#statistics for body_mass_g
+body_mass_values <- data['body_mass_g']
+body_mass_nona_values <- body_mass_values[!is.na(body_mass_values)]
+print("body_mass_values")
+mean(body_mass_nona_values)
+median(body_mass_nona_values)
+sd(body_mass_nona_values)
+max(body_mass_nona_values)
+min(body_mass_nona_values)
+```
+
+b)  In order to execute the summerise function, I have installed and loaded the dplyr package.
+
+The loaded data is passed to group_by function to group the data by 'species' column. This result is then passed to the summarise function. The result of this entire function is stored in variable bill_length_summary.
+
+summarise(BillLength = mean(bill_length_mm,na.rm = TRUE)) :- The NA values in the bill_length_mm are removed by using the na.rm = TRUE condition. The mean of this resultant is stored in BillLength.
+
+```{r}
+#Installing dplyr package
+install.packages("dplyr")
+```
+
+```{r}
+#loading dplyr
+library(dplyr)
+```
+
+```{r}
+#Creating grouped summeries
+
+#summaries for bill_length_mm
+bill_length_mean <- data %>% group_by(species) %>% summarise(BillLength = mean(bill_length_mm,na.rm =  TRUE))
+print(bill_length_mean)
+bill_length_median <- data %>% group_by(species) %>% summarise(BillLength = median(bill_length_mm,na.rm =  TRUE))
+print(bill_length_median)
+bill_length_sd <- data %>% group_by(species) %>% summarise(BillLength = sd(bill_length_mm,na.rm =  TRUE))
+print(bill_length_sd)
+bill_length_min <- data %>% group_by(species) %>% summarise(BillLength = min(bill_length_mm,na.rm =  TRUE))
+print(bill_length_min)
+bill_length_max <- data %>% group_by(species) %>% summarise(BillLength = max(bill_length_mm,na.rm =  TRUE))
+print(bill_length_max)
+
+#summaries for bill_depth_mm
+bill_depth_mean <- data %>% group_by(species) %>% summarise(BillDepth = mean(bill_depth_mm,na.rm =  TRUE))
+print(bill_depth_mean)
+bill_depth_median <- data %>% group_by(species) %>% summarise(BillDepth = median(bill_depth_mm,na.rm =  TRUE))
+print(bill_depth_median)
+bill_depth_sd <- data %>% group_by(species) %>% summarise(BillDepth = sd(bill_depth_mm,na.rm =  TRUE))
+print(bill_depth_sd)
+bill_depth_min <- data %>% group_by(species) %>% summarise(BillDepth = min(bill_depth_mm,na.rm =  TRUE))
+print(bill_depth_min)
+bill_depth_max <- data %>% group_by(species) %>% summarise(BillDepth = max(bill_depth_mm,na.rm =  TRUE))
+print(bill_depth_max)
+
+#summaries for flipper_length_mm
+flipper_length_mean <- data %>% group_by(species) %>% summarise(FlipperLength = mean(flipper_length_mm,na.rm =  TRUE))
+print(flipper_length_mean)
+flipper_length_median <- data %>% group_by(species) %>% summarise(FlipperLength = median(flipper_length_mm,na.rm =  TRUE))
+print(flipper_length_median)
+flipper_length_sd <- data %>% group_by(species) %>% summarise(FlipperLength = sd(flipper_length_mm,na.rm =  TRUE))
+print(flipper_length_sd)
+flipper_length_min <- data %>% group_by(species) %>% summarise(FlipperLength = min(flipper_length_mm,na.rm =  TRUE))
+print(flipper_length_min)
+flipper_length_max <- data %>% group_by(species) %>% summarise(FlipperLength = max(flipper_length_mm,na.rm =  TRUE))
+print(flipper_length_max)
+
+#summaries for body_mass_g
+body_mass_mean <- data %>% group_by(species) %>% summarise(BodyMass = mean(body_mass_g,na.rm =  TRUE))
+print(body_mass_mean)
+body_mass_median <- data %>% group_by(species) %>% summarise(BodyMass = median(body_mass_g,na.rm =  TRUE))
+print(body_mass_median)
+body_mass_sd <- data %>% group_by(species) %>% summarise(BodyMass = sd(body_mass_g,na.rm =  TRUE))
+print(body_mass_sd)
+body_mass_min <- data %>% group_by(species) %>% summarise(BodyMass = min(body_mass_g,na.rm =  TRUE))
+print(body_mass_min)
+body_mass_max <- data %>% group_by(species) %>% summarise(BodyMass = max(body_mass_g,na.rm =  TRUE))
+print(body_mass_max)
+```
+
+c)  Insights gained from summerization process:
+
+statistics of Adelie penguins: bill length (32.1mm to 46mm), bill depth (15.5mm to 21.5mm), flipper length (172mm to 210mm), body mass(2850g to 4775g).
+
+statistics of Chinstrap penguins: bill length (40.9mm to 58.0mm), bill depth (16.4mm to 20.8mm ), flipper length (178mm to 212mm), body mass(2700g to 4800g).
+
+statistics of Gentoo penguins: bill length (40.9mm to 59.6mm), bill depth (13.1mm to 17.3mm ), flipper length (203mm to 231mm), body mass(3950g to 6300g).
+
+If we consider the mean summeries, on an average Chinstrap penguins have the highest bill length and bill depth. Adelie penguins have the least average bill length, bill depth, flipper length and body mass when compared to other species. Gentoo penguins weigh approximately 1342.928g more than the other two species and have the highest average flipper length.
+
+d)  I am loading the already installed skimr package here.
+
+```{r}
+#Use Skimr package
+library(skimr)
+skim(data)
+```
+
+When compared to the previous summary statistics output, 'skimr' provides a more detailed summary with additional information such as data types, missing values and unique values. Skim groups the variable types and provides separate tibbles which makes it easier to understand. The first tibble shows the stats of all the character type columns and the second tibble shows the summary statistics of all the numeric columns along with histograph which shows how the data of the particular column is varying. This is very accessible and easier to understand.
+
+## 4) Data Visualization
+
+```{r}
+#Scatter plot
+library(ggplot2)
+ggplot(data, aes(x=bill_length_mm ,y=flipper_length_mm , color=species)) + geom_point() + labs(title = 'Scatter plot of flipper length vs bill length')
+```
+
+Scatter plot: The above graph shows the relation between bill length and flipper length of the three penguin species. It can be observed that, Adelie penguins have shorter bills and flippers compared to other species. The Gentoo penguins have large flipper but their bill length is almost equal to Chinstrap penguins.
+
+```{r}
+#Bar Plot
+ggplot(data, aes(species, fill=species)) + geom_bar() + labs(title = 'Bar plot of penguins count in each species')
+```
+
+Bar plot: The bar plot shows the count of penguin species. It can be observed that population of Adelie penguins is highest and Chinstrap penguins is lowest. The population of the Gentoo penguins is higher than chinstrap but slightly lower than Adelie.
+
+```{r}
+#Box plot
+ggplot(data, aes(x= species, y= body_mass_g ,fill=species)) + geom_boxplot() + labs(title = 'Box plot of body mass of each species')
+```
+
+Box plot: The box plot shows the relationship between different species in terms of its body mass in grams. It is observed that Gentoo penguins weigh more than Adelie and Chinstrap penguins on average. On an average both Adelie and Chinstrap penguins weigh under 4000g.
+
+```{r}
+#Extra plots to get intrepretations
+
+#bar plot of sex vs body mass
+ggplot(data, aes(sex, body_mass_g, fill=species)) + geom_bar(stat="identity") + labs(title = 'Bar plot of sex vs body mass')
+#Bar plot of sex vs bill length
+ggplot(data, aes(sex, bill_length_mm, fill=species)) + geom_bar(stat="identity") + labs(title = 'Bar plot of sex vs bill length')
+#scatter plot of flipper length vs bill length
+ggplot(data, aes(x=body_mass_g ,y=flipper_length_mm , color=species)) + geom_point() + labs(title = 'Scatter plot of flipper length vs bill length')
+
+```
+
+The interpretations drawn from these plots are highlighted in the below report.
+
+## 5) Project report and interpretation
+
+For this project I have used the packages tidyverse, skimr and dplyr. ggplot2 is used for data visualization.
+
+The data set is about palmer penguins. There are three different types of species (Adelie, Chinstrap and Gentoo) found on the three islands and these are stored as character variables. The other numeric variables describes about each penguin's bill length in millimeter, bill depth in millimeter, flipper length in millimeter, body mass in grams and year. This data set had few missing values and these were removed while creating the summary statistics in order get more effective results.
+
+Based on the statistics summary, flipper length of the penguins range from 172mm to 231mm with an average of 200.9152mm and their body mass ranges from 2700g to 6300g with an average of 4201.754g. Their bill length and bill depth ranges from 32.1mm to 59.6mm and 13.1mm to 21.5mm respectively with an average of 43.92193mm and 17.15117mm respectively.
+
+As per my observations from the plots, the population of Adelie penguins is the highest. Males weigh more and have slightly longer bills when compared to female penguins among all the three species. Gentoo penguins have high body mass when compared to other species, their flipper length increase with body weight as it's directly proportional. The other two species have almost the same body_mass to flipper_length ratio. Furthermore, Adelie penguins have shorter bills and flippers compared to other species. The Gentoo penguins have large flipper but their bill length is almost equal to Chinstrap penguins.
+
+c)  Using R and tidyverse for data analysis offers several advantages. R makes code more intuitive and readable, even beginners with less experience can understand the code easily. It is also an open source platform and is an excellent language to work with statistics. Both R and tidyverse have a rich ecosystem which provides various packages such as dplyr, tidyr, etc for data manipulation. These packages makes it easier to clean, manage and transform data as it organizes data in a consistent manner. ggplot2 is a very efficient tool for creating data visualizations as it allows us to create complex plots with concise code. Hence, these qualities makes it a valuable choice to perform wide range of data analysis tasks.
